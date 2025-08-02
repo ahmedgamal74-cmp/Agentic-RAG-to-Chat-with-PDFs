@@ -9,6 +9,7 @@ import chromadb
 from llama_index.core import StorageContext, load_index_from_storage
 # from dotenv import load_dotenv
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
+import re
 
 # This will use your GPU if torch detects it!
 embed_model = HuggingFaceEmbedding(model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
@@ -41,6 +42,8 @@ embed_model = HuggingFaceEmbedding(model_name="sentence-transformers/paraphrase-
 #                 })
 #     return parsed_pages
 
+
+
 def parse_pdfs(doc_folder="docs"):
     parsed_chunks = []
     for file in os.listdir(doc_folder):
@@ -49,17 +52,19 @@ def parse_pdfs(doc_folder="docs"):
             reader = PdfReader(pdf_path)
             for i, page in enumerate(reader.pages):
                 text = page.extract_text() or ""
-                # Split by paragraphs (empty lines)
-                for j, para in enumerate(text.split('\n\n')):
-                    para = para.strip()
-                    if para:
+                # Split by sentences using regex (handles ., !, ? end punctuation)
+                sentences = re.split(r'(?<=[.!?])\s+', text)
+                for j, sent in enumerate(sentences):
+                    sent = sent.strip()
+                    if sent:
                         parsed_chunks.append({
                             "file_name": file,
                             "page_num": i + 1,
-                            "chunk_num": j + 1,  # new: which chunk on this page
-                            "text": para,
+                            "chunk_num": j + 1,
+                            "text": sent,
                         })
     return parsed_chunks
+
 
 
 def save_parsed_chunks(parsed_chunks, out_path="parsed_chunks.json"):
@@ -113,13 +118,13 @@ def load_index(persist_dir="storage"):
 
 
 
-# Test the function standalone
-if __name__ == "__main__":
-    pages = parse_pdfs("docs")
-    for page in pages:
-        print(f"{page['file_name']} | Page {page['page_num']}: {page['text'][:100]}...")
-    save_parsed_chunks(pages)
-    build_index(pages)  # <-- Fixed here!
-    index = load_index()
-    engine = index.as_query_engine()
-    print(engine.query("What is this document about?"))
+# # Test the function standalone
+# if __name__ == "__main__":
+#     pages = parse_pdfs("docs")
+#     for page in pages:
+#         print(f"{page['file_name']} | Page {page['page_num']}: {page['text'][:100]}...")
+#     save_parsed_chunks(pages)
+#     build_index(pages)  # <-- Fixed here!
+#     index = load_index()
+#     engine = index.as_query_engine()
+#     print(engine.query("What is this document about?"))

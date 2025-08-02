@@ -110,7 +110,7 @@ if os.path.exists("storage"):
             index = load_index("storage")
             llm = get_local_llm()
             try:
-                query_engine = index.as_query_engine(llm=llm, similarity_top_k=1)
+                query_engine = index.as_query_engine(llm=llm, similarity_top_k=5)
                 result = query_engine.query(user_input)
             except Exception as e:
                 st.error(f"Error running local LLM: {e}")
